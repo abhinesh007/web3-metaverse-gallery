@@ -144,3 +144,85 @@ canvas {
     width: 100%;
     height: 100%;
 }
+
+.file-container {
+    width: 48em;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 0.9em;
+    text-align: center;
+    font-size: 1.2em;
+    background-color: #fff;
+    opacity: 1;
+    background: #ffffff;
+  }
+  
+  .file-container .card {
+    border-radius: 10px;
+    box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.3);
+    width: 600px;
+    height: 300px;
+    background-color: #ffffff;
+    padding: 10px 30px 40px;
+  }
+  
+  .file-container .card h3 {
+    font-size: 22px;
+    font-weight: 600;
+    
+  }
+  
+  .file-container .drop_box {
+    margin: 10px 0;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    border: 3px dotted #a3a3a3;
+    border-radius: 5px;
+  }
+  
+  .file-container .drop_box h4 {
+    font-size: 16px;
+    font-weight: 400;
+    color: #2e2e2e;
+  }
+  
+  .file-container .drop_box p {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: #a3a3a3;
+  }
+  
+  .file-container .btn {
+    text-decoration: none;
+    background-color: #005af0;
+    color: #ffffff;
+    padding: 10px 20px;
+    border: none;
+    outline: none;
+    transition: 0.file-container .3s;
+    display: inline-block;
+  }
+  
+  .file-container .btn:hover{
+    text-decoration: none;
+    background-color: #ffffff;
+    color: #005af0;
+    padding: 10px 20px;
+    border: none;
+    outline: 1px solid #010101;
+  }
+  .file-container .form input {
+    margin: 10px 0;
+    width: 100%;
+    background-color: #e2e2e2;
+    border: none;
+    outline: none;
+    padding: 12px 20px;
+    border-radius: 4px;
+  }

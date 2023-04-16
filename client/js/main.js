@@ -65,6 +65,15 @@ if (!Detector.webgl) {
             gal.centreSelector = document.querySelector('#centre');
             gal.centreSelector.hidden = true;
 
+            // file upload modal
+            gal.fileContainer = document.querySelector('#file-upload-container');
+            gal.fileContainer.style.display = "none";
+
+            gal.fileContainerClose = document.querySelector('#close-upload-btn');
+            gal.fileContainerClose.addEventListener('click', function() {
+               gal.fileContainer.style.display = "none";
+            })
+
             //enabling/disabling menu based on pointer controls
             gal.menu = document.getElementById('menu');
 
@@ -82,7 +91,19 @@ if (!Detector.webgl) {
                 gal.camera.aspect = window.innerWidth / window.innerHeight;
                 gal.camera.updateProjectionMatrix();
             });
-        },
+
+            // Add new item to Gallery
+            document.addEventListener('keyup', function(e) {
+                if (e.altKey && e.keyCode === 78) {
+                  console.log('Add new item'); 
+                  gal.fileContainer.style.display = "block";
+                  document.exitPointerLock();
+                  setTimeout(function(){
+                    document.getElementById('menu').className = 'hide';
+                  }, 0);
+                }
+            });
+         },
 
         pointerControls: function() {
             // Pointer Lock Controls & Full Screen
@@ -335,7 +356,12 @@ if (!Detector.webgl) {
                     color: 0xffffff
                 })
             );
+            gal.wall1.name = 'wall';
             gal.wall1.callback = function() { console.log( 'wall1' ); }
+            gal.wall1.addEventListener('click', function() {
+                console.log( 'wall1' );
+            });
+
 
             gal.wall2 = new THREE.Mesh(
                 new THREE.BoxGeometry(6, 6, 0.001),
@@ -344,6 +370,7 @@ if (!Detector.webgl) {
                 })
             );
             gal.wall2.callback = function() { console.log( 'wall2' ); }
+            gal.wall2.name = 'wall';
 
             gal.wall3 = new THREE.Mesh(
                 new THREE.BoxGeometry(6, 6, 0.001),
@@ -352,6 +379,7 @@ if (!Detector.webgl) {
                 })
             );
             gal.wall3.callback = function() { console.log( 'wall3' ); }
+            gal.wall3.name = 'wall';
 
             gal.wall4 = new THREE.Mesh(
                 new THREE.BoxGeometry(40, 6, 0.001),
@@ -360,6 +388,7 @@ if (!Detector.webgl) {
                 })
             );
             gal.wall4.callback = function() { console.log( 'wall4' ); }
+            gal.wall4.name = 'wall';
 
             gal.wallGroup.add(gal.wall1, gal.wall2, gal.wall3, gal.wall4);
             gal.wallGroup.position.y = 3;
