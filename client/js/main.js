@@ -3,6 +3,7 @@ if (!Detector.webgl) {
     alert('Your browser does not support WebGL!');
 } else {
     var gal = {
+        selectedObject: {},
         scene: new THREE.Scene(),
         camera: new THREE.PerspectiveCamera(
             75,
@@ -16,8 +17,8 @@ if (!Detector.webgl) {
         raycaster: new THREE.Raycaster(),
         mouse: new THREE.Vector2(),
         raycastSetUp: function() {
-            gal.mouse.x = 0.5 * 2 - 1;
-            gal.mouse.y = 0.5 * 2 + 1;
+            // gal.mouse.x = 0.5 * 2 - 1;
+            // gal.mouse.y = 0.5 * 2 + 1;
         },
         boot: function() {
             //renderer time delta
@@ -61,6 +62,8 @@ if (!Detector.webgl) {
             //Clicking on either of these will start the game
             gal.bgMenu = document.querySelector('#background_menu');
             gal.play = document.querySelector('#play_button');
+            gal.centreSelector = document.querySelector('#centre');
+            gal.centreSelector.hidden = true;
 
             //enabling/disabling menu based on pointer controls
             gal.menu = document.getElementById('menu');
@@ -108,14 +111,18 @@ if (!Detector.webgl) {
                         gal.toggleFullscreen();
                         //refer to below event listener:
                         gal.canvas.requestPointerLock();
+                        gal.centreSelector.hidden = true;
                     }
                 });
 
                 gal.bgMenu.addEventListener('click', function() {
                     gal.canvas.requestPointerLock();
+                    gal.centreSelector.hidden = false;
                 });
+
                 gal.play.addEventListener('click', function() {
                     gal.canvas.requestPointerLock();
+                    gal.centreSelector.hidden = false;
                 });
 
                 //pointer lock state change listener
@@ -176,6 +183,7 @@ if (!Detector.webgl) {
                     /(?:^|\s)hide(?!\S)/g,
                     ''
                 );
+                gal.centreSelector.hidden = true;
                 document.removeEventListener('mousemove', gal.moveCallback, false);
             }
         },
@@ -184,12 +192,33 @@ if (!Detector.webgl) {
             alert('Pointer Lock Failed');
         },
 
+        clickCallback: function(event) {
+            console.log('Click on', event)
+        },
+
         moveCallback: function(event) {
             //now that pointer disabled, we get the movement in x and y pos of the mouse
             var movementX =
                 event.movementX || event.mozMovementX || event.webkitMovementX || 0;
             var movementY =
                 event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+            
+            gal.raycaster.set( gal.camera.getWorldPosition(), gal.camera.getWorldDirection());
+            var intersects = gal.raycaster.intersectObjects(gal.scene.children);
+
+          
+            if ( intersects.length > 0 ) {
+                // console.log('intersects', intersects);
+                if (intersects[0].object.material.userData && intersects[0].object.material.userData.textureType === 'image') {
+                    gal.centreSelector.className = 'red';
+                    gal.selectedObject = intersects[0];
+                    // console.log('intersects', intersects[0].object.material.userData);
+                } else {
+                    gal.centreSelector.className = '';
+                }
+            } else {
+                gal.centreSelector.className = '';
+            }
         },
 
         toggleFullscreen: function() {
@@ -306,24 +335,31 @@ if (!Detector.webgl) {
                     color: 0xffffff
                 })
             );
+            gal.wall1.callback = function() { console.log( 'wall1' ); }
+
             gal.wall2 = new THREE.Mesh(
                 new THREE.BoxGeometry(6, 6, 0.001),
                 new THREE.MeshLambertMaterial({
                     color: 0xffffff
                 })
             );
+            gal.wall2.callback = function() { console.log( 'wall2' ); }
+
             gal.wall3 = new THREE.Mesh(
                 new THREE.BoxGeometry(6, 6, 0.001),
                 new THREE.MeshLambertMaterial({
                     color: 0xffffff
                 })
             );
+            gal.wall3.callback = function() { console.log( 'wall3' ); }
+
             gal.wall4 = new THREE.Mesh(
                 new THREE.BoxGeometry(40, 6, 0.001),
                 new THREE.MeshLambertMaterial({
                     color: 0xffffff
                 })
             );
+            gal.wall4.callback = function() { console.log( 'wall4' ); }
 
             gal.wallGroup.add(gal.wall1, gal.wall2, gal.wall3, gal.wall4);
             gal.wallGroup.position.y = 3;
@@ -358,7 +394,7 @@ if (!Detector.webgl) {
             // Adding Artworks
             gal.artGroup = new THREE.Group();
 
-            gal.num_of_paintings = 30;
+            gal.num_of_paintings = 6;
             gal.paintings = [];
             for (var i = 0; i < gal.num_of_paintings; i++) {
                 (function(index) {
@@ -373,8 +409,12 @@ if (!Detector.webgl) {
                     var texture = THREE.ImageUtils.loadTexture(artwork.src);
                     texture.minFilter = THREE.LinearFilter;
                     var img = new THREE.MeshBasicMaterial({
-                        map: texture
+                        map: texture,
                     });
+                    img.userData = {
+                        imageName: index,
+                        textureType: 'image'
+                    };
 
                     artwork.onload = function() {
                         ratiow = artwork.width / 300;
@@ -386,7 +426,7 @@ if (!Detector.webgl) {
                         ); //width, height
                         plane.overdraw = true;
                         //-1 because index is 0 - n-1 but num of paintings is n
-                        if (index <= Math.floor(gal.num_of_paintings / 2) - 1) {
+                        if (index <= Math.floor(gal.num_of_paintings / 2) - 1 || index < 15) {
                             //bottom half
                             //plane.rotation.z = Math.PI/2;
                             plane.position.set(2.5 * index - 17.5, 2, -2.96); //y and z kept constant
@@ -496,4 +536,5 @@ if (!Detector.webgl) {
     gal.create();
     gal.raycastSetUp();
     gal.render();
+    
 }
