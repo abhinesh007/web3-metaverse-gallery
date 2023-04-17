@@ -2,8 +2,12 @@ if (!Detector.webgl) {
     //if no support for WebGL
     alert('Your browser does not support WebGL!');
 } else {
+    let { userName } = JSON.parse(localStorage.getItem('userDetails') || '');
+
     var gal = {
-        selectedObject: {},
+        userName: userName,
+        isAdmin : userName === 'admin',
+        selectedImgObject : null,
         scene: new THREE.Scene(),
         camera: new THREE.PerspectiveCamera(
             75,
@@ -85,6 +89,14 @@ if (!Detector.webgl) {
             gal.moveLeft = false;
             gal.moveRight = false;
 
+            // User Bid element
+            gal.userBidContainer = document.getElementById('user-bid');
+            gal.userBidContainer.style.display = 'none';
+
+            // Admin Bid element
+            gal.adminBidContainer = document.getElementById('admin-bid');
+            gal.adminBidContainer.style.display = 'none';
+
             //Resize if window size change!
             window.addEventListener('resize', function() {
                 gal.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -94,13 +106,33 @@ if (!Detector.webgl) {
 
             // Add new item to Gallery
             document.addEventListener('keyup', function(e) {
+                if(e.keyCode === 27) {
+                    gal.fileContainer.style.display = "none";
+                }
+
                 if (e.altKey && e.keyCode === 78) {
                   console.log('Add new item'); 
+
+                  if(!gal.isAdmin) {
+                    alert('Action only allowed to Admins');
+                    return;
+                  }
                   gal.fileContainer.style.display = "block";
                   document.exitPointerLock();
                   setTimeout(function(){
                     document.getElementById('menu').className = 'hide';
                   }, 0);
+                }
+            });
+
+            // Image transaction options 
+            document.addEventListener('click', function(e) {
+                if (gal.selectedImgObject) {
+                    document.exitPointerLock();
+                    setTimeout(function(){
+                        document.getElementById('menu').className = 'hide';
+                    }, 0);
+                    gal.selectedImgObject.object.material.callback();
                 }
             });
          },
@@ -232,13 +264,17 @@ if (!Detector.webgl) {
                 // console.log('intersects', intersects);
                 if (intersects[0].object.material.userData && intersects[0].object.material.userData.textureType === 'image') {
                     gal.centreSelector.className = 'red';
-                    gal.selectedObject = intersects[0];
+                    gal.selectedImgObject  = intersects[0] || null;
                     // console.log('intersects', intersects[0].object.material.userData);
                 } else {
                     gal.centreSelector.className = '';
+                    gal.selectedImgObject  = null;
+                    gal.userBidContainer.style.display = 'none';
                 }
             } else {
                 gal.centreSelector.className = '';
+                gal.selectedImgObject  = null;
+                gal.userBidContainer.style.display = 'none';
             }
         },
 
@@ -261,6 +297,7 @@ if (!Detector.webgl) {
                     );
                 }
             } else {
+                gal.selectedImgObject  = null;
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
                 } else if (document.msExitFullscreen) {
@@ -312,7 +349,29 @@ if (!Detector.webgl) {
                 }
             });
         },
+        placeUserBid: function() {
+            if(gal.selectedImgObject) {
+                let userBidValue = gal.userBidContainer.querySelector('#bid-input').value || null;
+                let selectedImage = gal.selectedImgObject.object.material.userData.imageName;
+                
+                console.log('userBidValue,selectedImage', userBidValue, selectedImage, userName)
+                gal.closeUserBid();
+                gal.userBidContainer.querySelector('#bid-input').value = '';
+                alert('Bid Placed successfully!')
 
+            }
+        },
+        closeUserBid: function() {
+            gal.selectedImgObject = null;
+            gal.userBidContainer.style.display = 'none';
+        },
+        closeAdminBid: function() {
+            gal.selectedImgObject = null;
+            gal.adminBidContainer.style.display = 'none';
+        },
+        allotBid: function() {
+            gal.closeAdminBid();
+        },
         create: function() {
             //let there be light!
             gal.worldLight = new THREE.AmbientLight(0xffffff);
@@ -357,7 +416,6 @@ if (!Detector.webgl) {
                 })
             );
             gal.wall1.name = 'wall';
-            gal.wall1.callback = function() { console.log( 'wall1' ); }
             gal.wall1.addEventListener('click', function() {
                 console.log( 'wall1' );
             });
@@ -369,7 +427,6 @@ if (!Detector.webgl) {
                     color: 0xffffff
                 })
             );
-            gal.wall2.callback = function() { console.log( 'wall2' ); }
             gal.wall2.name = 'wall';
 
             gal.wall3 = new THREE.Mesh(
@@ -378,7 +435,6 @@ if (!Detector.webgl) {
                     color: 0xffffff
                 })
             );
-            gal.wall3.callback = function() { console.log( 'wall3' ); }
             gal.wall3.name = 'wall';
 
             gal.wall4 = new THREE.Mesh(
@@ -387,7 +443,6 @@ if (!Detector.webgl) {
                     color: 0xffffff
                 })
             );
-            gal.wall4.callback = function() { console.log( 'wall4' ); }
             gal.wall4.name = 'wall';
 
             gal.wallGroup.add(gal.wall1, gal.wall2, gal.wall3, gal.wall4);
@@ -444,6 +499,16 @@ if (!Detector.webgl) {
                         imageName: index,
                         textureType: 'image'
                     };
+                    // Image Callback
+                    img.callback = function() {
+                        console.log('img.userData', img.userData);
+                        if(gal.isAdmin) {
+                            gal.adminBidContainer.style.display = 'block';
+                        } else {
+                            gal.userBidContainer.style.display = 'block';
+                        }
+                       
+                    }
 
                     artwork.onload = function() {
                         ratiow = artwork.width / 300;
