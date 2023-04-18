@@ -10,83 +10,107 @@
     <link href='https://fonts.googleapis.com/css?family=Lato|Oswald' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="./css/index.css" media="screen" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
-
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 </head>
 
 <body>
-    <div id="background_menu"></div>
-    <div id="menu">
-        <div id="img_container">
-            <img src="./img/starrynight.jpg">
-        </div>
-        <div id="content">
-            <h1>Art Gallery <br> in Metaverse</h1>
-            <div>
-                <p>This is an interactive Art Gallery Metaverse.</p>
-                <p>Made with Three.js</p>
+    <div id="app">
+        <div id="background_menu"></div>
+        <div id="menu">
+            <div id="img_container">
+                <img src="./img/starrynight.jpg">
             </div>
-            <div>
-                <p>Instructions:</p>
-                <p>Arrow Keys or W/A/S/D to Move Around</p>
-                <p>Mouse to Look Around</p>
-            </div>
-            <div id="play_button">
-                <p>EXPLORE ARTWORKS</p>
-            </div>
-        </div>
-    </div>
-    <div id="centre">O</div>
-    <div class="file-container" id="file-upload-container">
-        <div class="card">
-            <h3>Upload Files</h3>
-            <div class="drop_box">
-            <header>
-                <h4>Select File here</h4>
-            </header>
-            <p>Files Supported: JPG, PNG</p>
-            <input type="file" hidden accept=".doc,.docx,.pdf" id="fileID" style="display:none;">
-            <button class="btn" id="file-upload-btn">Choose File</button>
-            <button class="btn" id="close-upload-btn" style="margin-top: 10px;">Close</button>
+            <div id="content">
+                <h1>Art Gallery <br> in Metaverse</h1>
+                <div>
+                    <p>This is an interactive Art Gallery Metaverse.</p>
+                    <p>Made with Three.js</p>
+                </div>
+                <div>
+                    <p>Instructions:</p>
+                    <p>Arrow Keys or W/A/S/D to Move Around</p>
+                    <p>Mouse to Look Around</p>
+                </div>
+                <div id="play_button">
+                    <p>EXPLORE ARTWORKS</p>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="user-bid" id="user-bid">
-        <div class="bid-layout dropdown-menu d-flex flex-column flex-lg-row align-items-stretch justify-content-start p-3 rounded-3 shadow-lg" data-bs-theme="light">
+        <div id="centre">O</div>
+        <div class="file-container" id="file-upload-container">
             <div class="card">
-                <h5 class="card-header">Place Bid</h5>
-                <div class="card-body">
-                    <label for="basic-url">Bid Amount</label>
-                    <div class="input-group mb-3">
-                      <div class="input-group-prepend">
-                        <span class="input-group-text" id="basic-addon3">$</span>
-                      </div>
-                      <input type="number" class="form-control" id="bid-input" required>
+                <h3>Upload Files</h3>
+                <div class="drop_box">
+                <header>
+                    <h4>Select File here</h4>
+                </header>
+                <p>Files Supported: JPG, PNG</p>
+                <input type="file" hidden accept=".doc,.docx,.pdf" id="fileID" style="display:none;">
+                <button class="btn" id="file-upload-btn">Choose File</button>
+                <button class="btn" id="close-upload-btn" style="margin-top: 10px;">Close</button>
+                </div>
+            </div>
+        </div>
+        <div class="user-bid" id="user-bid">
+            <div class="bid-layout dropdown-menu d-flex flex-column flex-lg-row align-items-stretch justify-content-start p-3 rounded-3 shadow-lg" data-bs-theme="light">
+                <div class="card">
+                    <h5 class="card-header">Place Bid</h5>
+                    <div class="card-body">
+                        <label for="basic-url">Bid Amount</label>
+                        <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon3">$</span>
+                        </div>
+                        <input type="number" class="form-control" id="bid-input" required>
+                        </div>
+                        <a class="btn btn-primary" onclick="gal.placeUserBid()">Bid</a>
+                        <a class="btn btn-secondary" onclick="gal.closeUserBid()">Close</a>
                     </div>
-                    <a class="btn btn-primary" onclick="gal.placeUserBid()">Bid</a>
-                    <a class="btn btn-secondary" onclick="gal.closeUserBid()">Close</a>
+                </div>
+            </div>
+        </div>
+        <div class="admin-bid" id="admin-bid">
+            <div class="bid-layout dropdown-menu d-flex flex-column flex-lg-row align-items-stretch justify-content-start p-3 rounded-3 shadow-lg" data-bs-theme="light">
+                <div class="card">
+                    <h5 class="card-header">Manage Bids</h5>
+                    <div class="card-body">
+                        <div>
+                            <table class="table">
+                                <thead>
+                                  <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Art Name</th>
+                                    <th scope="col">User Name</th>
+                                    <th scope="col">Bid Amount</th>
+                                    <th scope="col">Select</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr v-for="bid in gal.currentArtBids">
+                                    <th scope="row">1</th>
+                                    <td>{{ bid.selectedImage }}</td>
+                                    <td>{{ bid.userName }}</td>
+                                    <td>{{ bid.userBidValue }}</td>
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
+                                            <label class="form-check-label" for="flexRadioDefault1">
+                                                Default radio
+                                            </label>
+                                        </div>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <a class="btn btn-primary" onclick="gal.allotBid()">Allot Bid</a>
+                        <a class="btn btn-danger" title="Remove Art from Gallery">Delete</a>
+                        <a class="btn btn-secondary" onclick="gal.closeAdminBid()">Close</a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="admin-bid" id="admin-bid">
-        <div class="bid-layout dropdown-menu d-flex flex-column flex-lg-row align-items-stretch justify-content-start p-3 rounded-3 shadow-lg" data-bs-theme="light">
-            <div class="card">
-                <h5 class="card-header">Manage Bids</h5>
-                <div class="card-body">
-                    <label for="basic-url">Bid Amount</label>
-                    <div class="input-group mb-3">
-                      <div class="input-group-prepend">
-                        <span class="input-group-text" id="basic-addon3">$</span>
-                      </div>
-                      <input type="number" class="form-control" id="bid-input" required>
-                    </div>
-                    <a class="btn btn-primary" onclick="gal.allotBid()">Allot Bid</a>
-                    <a class="btn btn-secondary" onclick="gal.closeAdminBid()">Close</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
 
     <script type="text/javascript" src="js/three.js"></script>
     <script type="text/javascript" src="js/OutlinePass.js"></script>

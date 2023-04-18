@@ -63,7 +63,7 @@ if (!Detector.webgl) {
             gal.canvas = document.querySelector('canvas');
             gal.canvas.className = 'gallery';
 
-            //Clicking on either of these will start the game
+            //Clicking on either of these will start
             gal.bgMenu = document.querySelector('#background_menu');
             gal.play = document.querySelector('#play_button');
             gal.centreSelector = document.querySelector('#centre');
@@ -349,18 +349,25 @@ if (!Detector.webgl) {
                 }
             });
         },
+        bidsCollections: [],
         placeUserBid: function() {
             if(gal.selectedImgObject) {
                 let userBidValue = gal.userBidContainer.querySelector('#bid-input').value || null;
                 let selectedImage = gal.selectedImgObject.object.material.userData.imageName;
                 
                 console.log('userBidValue,selectedImage', userBidValue, selectedImage, userName)
+                gal.bidsCollections.push({ userBidValue, selectedImage, userName});
                 gal.closeUserBid();
                 gal.userBidContainer.querySelector('#bid-input').value = '';
                 alert('Bid Placed successfully!')
 
             }
         },
+        getBidsForArt: function(imageName) {
+            imageName = imageName || intersects[0].object.material.userData.imageName;
+            return gal.bidsCollections.filter(bid => bid.selectedImage === imageName) || [];
+        },
+        currentArtBids: [],
         closeUserBid: function() {
             gal.selectedImgObject = null;
             gal.userBidContainer.style.display = 'none';
@@ -504,6 +511,7 @@ if (!Detector.webgl) {
                         console.log('img.userData', img.userData);
                         if(gal.isAdmin) {
                             gal.adminBidContainer.style.display = 'block';
+                            gal.currentArtBids =  gal.getBidsForArt(img.userData.imageName);
                         } else {
                             gal.userBidContainer.style.display = 'block';
                         }
@@ -623,6 +631,10 @@ if (!Detector.webgl) {
             }
         },
     };
+    var app = new Vue({
+        el: '#app',
+        data: gal
+    });
 
     gal.boot();
     gal.pointerControls();
@@ -630,5 +642,4 @@ if (!Detector.webgl) {
     gal.create();
     gal.raycastSetUp();
     gal.render();
-    
 }
