@@ -2,7 +2,12 @@ if (!Detector.webgl) {
     //if no support for WebGL
     alert('Your browser does not support WebGL!');
 } else {
-    let { userName } = JSON.parse(localStorage.getItem('userDetails') || '');
+    var db = new Dexie("bids");
+    db.version(1).stores({
+        bids: "++id, userBidValue, selectedImage, userName"
+    });
+
+    let { userName } = JSON.parse(localStorage.getItem('userDetails') || '{}');
 
     var gal = {
         userName: userName,
@@ -356,18 +361,43 @@ if (!Detector.webgl) {
                 let selectedImage = gal.selectedImgObject.object.material.userData.imageName;
                 
                 console.log('userBidValue,selectedImage', userBidValue, selectedImage, userName)
-                gal.bidsCollections.push({ userBidValue, selectedImage, userName});
+                // gal.bidsCollections.push({ userBidValue, selectedImage, userName});
+                db.bids.add({ userBidValue, selectedImage, userName});
                 gal.closeUserBid();
                 gal.userBidContainer.querySelector('#bid-input').value = '';
                 alert('Bid Placed successfully!')
 
             }
         },
-        getBidsForArt: function(imageName) {
+        getBidsForArt: async function(imageName) {
             imageName = imageName || intersects[0].object.material.userData.imageName;
-            return gal.bidsCollections.filter(bid => bid.selectedImage === imageName) || [];
+            const bid = await db.bids
+            .where("selectedImage")
+            .equals(imageName)
+            .toArray();
+
+            return bid || [];
+        },
+        bidAlreadyPlaced: false,
+        checkAlreadyPlacedBids: async function() {
+            if (gal.selectedImgObject) {
+                let selectedImage = gal.selectedImgObject.object.material.userData.imageName || '';
+                const bidFound = await db.bids
+                .where({selectedImage, userName:gal.userName})
+                .toArray();
+
+                if(bidFound.length) {
+                    document.getElementById('bid-input').value = bidFound[0].userBidValue;
+                }
+    
+                return bidFound.length > 0;
+            }
         },
         currentArtBids: [],
+        currentSelectedBid: {},
+        selectBid: function(bidUserName) {
+            gal.currentSelectedBid = gal.currentArtBids.find(bid => bid.userName === bidUserName);
+        },
         closeUserBid: function() {
             gal.selectedImgObject = null;
             gal.userBidContainer.style.display = 'none';
@@ -377,6 +407,8 @@ if (!Detector.webgl) {
             gal.adminBidContainer.style.display = 'none';
         },
         allotBid: function() {
+            alert(`Bid for Art - ${gal.currentSelectedBid.selectedImage}, Alloted to -${gal.currentSelectedBid.userName}, for Amount of - $${gal.currentSelectedBid.userBidValue}`);
+            gal.currentSelectedBid = {};
             gal.closeAdminBid();
         },
         create: function() {
@@ -507,15 +539,16 @@ if (!Detector.webgl) {
                         textureType: 'image'
                     };
                     // Image Callback
-                    img.callback = function() {
+                    img.callback = async function() {
                         console.log('img.userData', img.userData);
                         if(gal.isAdmin) {
                             gal.adminBidContainer.style.display = 'block';
-                            gal.currentArtBids =  gal.getBidsForArt(img.userData.imageName);
+                            gal.currentArtBids =  await gal.getBidsForArt(img.userData.imageName);
                         } else {
+                            document.getElementById('bid-input').value = '';
+                            gal.bidAlreadyPlaced = await gal.checkAlreadyPlacedBids();
                             gal.userBidContainer.style.display = 'block';
                         }
-                       
                     }
 
                     artwork.onload = function() {

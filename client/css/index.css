@@ -233,3 +233,7 @@ canvas {
     left: 60%;
     transform: translate(-50%, -50%);
 }
+
+.cursor-not-allowed {
+    cursor: not-allowed;
+}

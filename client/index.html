@@ -11,6 +11,7 @@
     <link rel="stylesheet" type="text/css" href="./css/index.css" media="screen" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script> 
 </head>
 
 <body>
@@ -54,8 +55,12 @@
         <div class="user-bid" id="user-bid">
             <div class="bid-layout dropdown-menu d-flex flex-column flex-lg-row align-items-stretch justify-content-start p-3 rounded-3 shadow-lg" data-bs-theme="light">
                 <div class="card">
-                    <h5 class="card-header">Place Bid</h5>
+                    <h5 class="card-header">{{ gal.bidAlreadyPlaced ? 'Update Bid':'Place Bid'}}</h5>
                     <div class="card-body">
+                        <p v-if="gal.bidAlreadyPlaced">
+                            You've already placed bid for this Art.
+                        </p>
+                        <p>Art Name : {{ gal?.selectedImgObject?.object?.material?.userData?.imageName}}</p>
                         <label for="basic-url">Bid Amount</label>
                         <div class="input-group mb-3">
                         <div class="input-group-prepend">
@@ -63,10 +68,12 @@
                         </div>
                         <input type="number" class="form-control" id="bid-input" required>
                         </div>
-                        <a class="btn btn-primary" onclick="gal.placeUserBid()">Bid</a>
+                        <a class="btn btn-primary" v-if="gal.bidAlreadyPlaced" onclick="gal.placeUserBid()">Update Bid</a>
+                        <a class="btn btn-primary" v-if="!gal.bidAlreadyPlaced" onclick="gal.placeUserBid()">Bid</a>
                         <a class="btn btn-secondary" onclick="gal.closeUserBid()">Close</a>
                     </div>
                 </div>
+                
             </div>
         </div>
         <div class="admin-bid" id="admin-bid">
@@ -75,7 +82,7 @@
                     <h5 class="card-header">Manage Bids</h5>
                     <div class="card-body">
                         <div>
-                            <table class="table">
+                            <table class="table" v-if="gal.currentArtBids.length">
                                 <thead>
                                   <tr>
                                     <th scope="col">#</th>
@@ -90,22 +97,42 @@
                                     <th scope="row">1</th>
                                     <td>{{ bid.selectedImage }}</td>
                                     <td>{{ bid.userName }}</td>
-                                    <td>{{ bid.userBidValue }}</td>
+                                    <td>${{ bid.userBidValue }}</td>
                                     <td>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
-                                            <label class="form-check-label" for="flexRadioDefault1">
-                                                Default radio
-                                            </label>
+                                            <input
+                                                class="form-check-input"
+                                                type="radio"
+                                                :value="bid.userName"
+                                                name="select-bid"
+                                                id="select-bid"
+                                                @click="gal.selectBid(bid.userName)"
+                                            >
                                         </div>
                                     </td>
                                   </tr>
                                 </tbody>
                             </table>
+                            <div v-if="!gal.currentArtBids.length" class="pb-3">
+                                No Bids available for this Art.
+                            </div>
                         </div>
-                        <a class="btn btn-primary" onclick="gal.allotBid()">Allot Bid</a>
-                        <a class="btn btn-danger" title="Remove Art from Gallery">Delete</a>
-                        <a class="btn btn-secondary" onclick="gal.closeAdminBid()">Close</a>
+                        <button
+                            v-if="gal.currentArtBids.length"
+                            class="btn btn-primary"
+                            onclick="gal.allotBid()"
+                        >
+                            Allot Bid
+                        </button>
+                        <button
+                            :disabled="gal.currentArtBids.length ? true : false"
+                            :class="{ 'cursor-not-allowed': gal.currentArtBids.length }"
+                            class="btn btn-danger"
+                            title="Remove Art from Gallery"
+                        >
+                            Delete Art
+                        </button>
+                        <button class="btn btn-secondary" onclick="gal.closeAdminBid()">Close</button>
                     </div>
                 </div>
             </div>
