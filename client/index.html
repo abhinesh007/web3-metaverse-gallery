@@ -16,6 +16,16 @@
 
 <body>
     <div id="app">
+        <nav class="navbar bg-body-tertiary">
+            <div class="container-fluid">
+              <a class="navbar-brand">Metaverse Art Gallery</a>
+             
+              <div class="d-flex">
+                <p class="mb-0 p-2 fw-bold">Hello {{gal.userName}}! </p>
+                <button class="btn btn-outline-warning" @click="redirectToLogin();">Logout</button>
+              </div>
+            </div>
+        </nav>
         <div id="background_menu"></div>
         <div id="menu">
             <div id="img_container">
@@ -46,8 +56,14 @@
                     <h4>Select File here</h4>
                 </header>
                 <p>Files Supported: JPG, PNG</p>
-                <input type="file" hidden accept=".doc,.docx,.pdf" id="fileID" style="display:none;">
-                <button class="btn" id="file-upload-btn">Choose File</button>
+                <input type="file"
+                    hidden accept="image/*"
+                    @change="uploadImages($event)"
+                    id="file-input"
+                    style="display:none;"
+                    multiple="true"
+                >
+                <button class="btn" id="file-upload-btn" @click="document.getElementById('file-input').click()">Choose File</button>
                 <button class="btn" id="close-upload-btn" style="margin-top: 10px;">Close</button>
                 </div>
             </div>

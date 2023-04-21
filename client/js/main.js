@@ -4,9 +4,13 @@ if (!Detector.webgl) {
 } else {
     var db = new Dexie("bids");
     db.version(1).stores({
-        bids: "++id, userBidValue, selectedImage, userName"
+        bids: "++id, userBidValue, selectedImage, userName",
+        arts: "++id, artObject, fileName"
     });
-
+    db.version(2).stores({
+        bids: "++id, userBidValue, selectedImage, userName",
+        arts: "++id, artObject, fileName"
+    });
     let { userName } = JSON.parse(localStorage.getItem('userDetails') || '{}');
 
     var gal = {
@@ -28,6 +32,12 @@ if (!Detector.webgl) {
         raycastSetUp: function() {
             // gal.mouse.x = 0.5 * 2 - 1;
             // gal.mouse.y = 0.5 * 2 + 1;
+        },
+        initialise: function() {
+            if(!gal.userName) {
+                alert('Please login to continue, redirecting..')
+                gal.redirectToLogin();
+            }
         },
         boot: function() {
             //renderer time delta
@@ -411,11 +421,106 @@ if (!Detector.webgl) {
         selectBid: function(bidUserName) {
             gal.currentSelectedBid = gal.currentArtBids.find(bid => bid.userName === bidUserName);
         },
-        removeArt: function(imageName) {
+        removeArt: async function(imageName) {
             imageName =  imageName || gal.selectedImgObject.object.material.userData.imageName || ''
             const objectToDelete = gal.scene.children.find(o => o.name === imageName)
             gal.scene.remove(objectToDelete);
+            await db.arts
+            .where('fileName').equals(imageName)
+            .delete();
             gal.closeAdminBid();
+        },
+        uploadImages: function (event) {
+            const uploadUrl = 'http://foobar.com/upload';
+            const files = event.target.files;
+            // let data = new FormData();
+            // data.append('name', file.name || '');
+            // data.append('file', file);
+
+            for (let file of files) {
+                setTimeout(() => {
+                    const artObject = file;
+                    db.arts.add({ artObject, fileName:file.name});
+                    gal.addArtToScene(file);
+                }, 0);
+            }
+
+            gal.fileContainer.style.display = "none";
+
+            // let config = {
+            //   header : {
+            //     'Content-Type' : 'image/png'
+            //   }
+            // }
+
+            // axios.put(
+            //   URL, 
+            //   data,
+            //   config
+            // ).then(
+            //   response => {
+            //     console.log('image upload response > ', response)
+            //   }
+            // )
+        },
+        addArtToScene: function (file) {
+            const imageUrl = window.URL.createObjectURL(file);
+
+            var artwork = new Image();
+            var ratiow = 0;
+            var ratioh = 0;
+
+            artwork.src = imageUrl;
+
+            var texture = THREE.ImageUtils.loadTexture(artwork.src);
+            texture.minFilter = THREE.LinearFilter;
+            var img = new THREE.MeshBasicMaterial({
+                map: texture,
+            });
+            img.userData = {
+                imageName: file.name,
+                textureType: 'image'
+            };
+            // Image Callback
+            img.callback = async function () {
+                console.log('img.userData', img.userData);
+                if (gal.isAdmin) {
+                    gal.adminBidContainer.style.display = 'block';
+                    gal.currentArtBids = await gal.getBidsForArt(img.userData.imageName);
+                } else {
+                    document.getElementById('bid-input').value = '';
+                    gal.bidAlreadyPlaced = await gal.checkAlreadyPlacedBids();
+                    gal.userBidContainer.style.display = 'block';
+                }
+            }
+
+            artwork.onload = function () {
+                ratiow = artwork.width / 300;
+                ratioh = artwork.height / 300;
+                // plane for artwork
+                var plane = new THREE.Mesh(
+                    new THREE.PlaneBufferGeometry(ratiow, ratioh),
+                    img
+                ); //width, height
+                plane.name = img.userData.imageName;
+                plane.overdraw = true;
+                //-1 because index is 0 - n-1 but num of paintings is n
+                const index = gal.paintings.length;
+                if (index <= Math.floor(gal.num_of_paintings / 2) - 1 || index < 15) {
+                    //bottom half
+                    //plane.rotation.z = Math.PI/2;
+                    plane.position.set(2.5 * index - 17.5, 2, -2.96); //y and z kept constant
+                } else {
+                    //plane.rotation.z = Math.PI/2;
+                    plane.position.set(2.5 * index - 55, 2, 2.96);
+                    //plane.position.set(65*i - 75*Math.floor(gal.num_of_paintings/2) - 15*Math.floor(num_of_paintings/2), 48, 90);
+                    plane.rotation.y = Math.PI;
+                }
+                gal.scene.add(plane);
+                gal.paintings.push(plane);
+            };
+
+            img.map.needsUpdate = true; //ADDED
         },
         closeUserBid: function() {
             gal.selectedImgObject = null;
@@ -425,13 +530,19 @@ if (!Detector.webgl) {
             gal.selectedImgObject = null;
             gal.adminBidContainer.style.display = 'none';
         },
-        allotBid: function() {
+        allotBid: async function() {
             alert(`Bid for Art - ${gal.currentSelectedBid.selectedImage}, Alloted to -${gal.currentSelectedBid.userName}, for Amount of - $${gal.currentSelectedBid.userBidValue}`);
             gal.removeArt(gal.currentSelectedBid.selectedImage);
             gal.currentSelectedBid = {};
             gal.closeAdminBid();
         },
-        create: function() {
+        redirectToLogin: (logout) => {
+            if(logout) {
+                localStorage.removeItem('userDetails');
+            }
+            window.location.href = "/client/login.html";
+        },
+        create: async function() {
             //let there be light!
             gal.worldLight = new THREE.AmbientLight(0xffffff);
             gal.scene.add(gal.worldLight);
@@ -538,66 +649,9 @@ if (!Detector.webgl) {
             gal.artGroup = new THREE.Group();
 
             gal.num_of_paintings = 6;
-            gal.paintings = [];
-            for (var i = 0; i < gal.num_of_paintings; i++) {
-                (function(index) {
-                    //https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/Image
-                    var artwork = new Image();
-                    var ratiow = 0;
-                    var ratioh = 0;
-
-                    var source = './img/artworks/' + index.toString() + '.jpg';
-                    artwork.src = source;
-
-                    var texture = THREE.ImageUtils.loadTexture(artwork.src);
-                    texture.minFilter = THREE.LinearFilter;
-                    var img = new THREE.MeshBasicMaterial({
-                        map: texture,
-                    });
-                    img.userData = {
-                        imageName: index,
-                        textureType: 'image'
-                    };
-                    // Image Callback
-                    img.callback = async function() {
-                        console.log('img.userData', img.userData);
-                        if(gal.isAdmin) {
-                            gal.adminBidContainer.style.display = 'block';
-                            gal.currentArtBids =  await gal.getBidsForArt(img.userData.imageName);
-                        } else {
-                            document.getElementById('bid-input').value = '';
-                            gal.bidAlreadyPlaced = await gal.checkAlreadyPlacedBids();
-                            gal.userBidContainer.style.display = 'block';
-                        }
-                    }
-
-                    artwork.onload = function() {
-                        ratiow = artwork.width / 300;
-                        ratioh = artwork.height / 300;
-                        // plane for artwork
-                        var plane = new THREE.Mesh(
-                            new THREE.PlaneBufferGeometry(ratiow, ratioh),
-                            img
-                        ); //width, height
-                        plane.name = img.userData.imageName;
-                        plane.overdraw = true;
-                        //-1 because index is 0 - n-1 but num of paintings is n
-                        if (index <= Math.floor(gal.num_of_paintings / 2) - 1 || index < 15) {
-                            //bottom half
-                            //plane.rotation.z = Math.PI/2;
-                            plane.position.set(2.5 * index - 17.5, 2, -2.96); //y and z kept constant
-                        } else {
-                            //plane.rotation.z = Math.PI/2;
-                            plane.position.set(2.5 * index - 55, 2, 2.96);
-                            //plane.position.set(65*i - 75*Math.floor(gal.num_of_paintings/2) - 15*Math.floor(num_of_paintings/2), 48, 90);
-                            plane.rotation.y = Math.PI;
-                        }
-                        gal.scene.add(plane);
-                        gal.paintings.push(plane);
-                    };
-
-                    img.map.needsUpdate = true; //ADDED
-                })(i);
+            gal.paintings = await db.arts.toArray() || [];
+            for (let painting of gal.paintings) {
+                gal.addArtToScene(painting.artObject);
             }
         },
         render: function() {
@@ -690,6 +744,7 @@ if (!Detector.webgl) {
         data: gal
     });
 
+    gal.initialise();
     gal.boot();
     gal.pointerControls();
     gal.movement();
