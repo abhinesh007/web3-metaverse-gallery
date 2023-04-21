@@ -355,22 +355,35 @@ if (!Detector.webgl) {
             });
         },
         bidsCollections: [],
-        placeUserBid: function() {
+        placeUserBid: async function() {
             if(gal.selectedImgObject) {
                 let userBidValue = gal.userBidContainer.querySelector('#bid-input').value || null;
                 let selectedImage = gal.selectedImgObject.object.material.userData.imageName;
                 
                 console.log('userBidValue,selectedImage', userBidValue, selectedImage, userName)
-                // gal.bidsCollections.push({ userBidValue, selectedImage, userName});
-                db.bids.add({ userBidValue, selectedImage, userName});
-                gal.closeUserBid();
+            
+                const bidFound = await db.bids
+                .where({selectedImage, userName:gal.userName})
+                .toArray();
+
+                if(bidFound.length) {
+                    await db.bids
+                    .where({selectedImage, userName:gal.userName})
+                    .modify(bids => {
+                        bids.userBidValue = userBidValue
+                    });
+                } else {
+                    db.bids.add({ userBidValue, selectedImage, userName});
+                }
+                setTimeout(gal.closeUserBid(), 10);
+                // gal.closeUserBid();
                 gal.userBidContainer.querySelector('#bid-input').value = '';
                 alert('Bid Placed successfully!')
 
             }
         },
         getBidsForArt: async function(imageName) {
-            imageName = imageName || intersects[0].object.material.userData.imageName;
+            imageName = imageName || intersects && intersects[0].object.material.userData.imageName;
             const bid = await db.bids
             .where("selectedImage")
             .equals(imageName)
@@ -398,6 +411,12 @@ if (!Detector.webgl) {
         selectBid: function(bidUserName) {
             gal.currentSelectedBid = gal.currentArtBids.find(bid => bid.userName === bidUserName);
         },
+        removeArt: function(imageName) {
+            imageName =  imageName || gal.selectedImgObject.object.material.userData.imageName || ''
+            const objectToDelete = gal.scene.children.find(o => o.name === imageName)
+            gal.scene.remove(objectToDelete);
+            gal.closeAdminBid();
+        },
         closeUserBid: function() {
             gal.selectedImgObject = null;
             gal.userBidContainer.style.display = 'none';
@@ -408,6 +427,7 @@ if (!Detector.webgl) {
         },
         allotBid: function() {
             alert(`Bid for Art - ${gal.currentSelectedBid.selectedImage}, Alloted to -${gal.currentSelectedBid.userName}, for Amount of - $${gal.currentSelectedBid.userBidValue}`);
+            gal.removeArt(gal.currentSelectedBid.selectedImage);
             gal.currentSelectedBid = {};
             gal.closeAdminBid();
         },
@@ -559,6 +579,7 @@ if (!Detector.webgl) {
                             new THREE.PlaneBufferGeometry(ratiow, ratioh),
                             img
                         ); //width, height
+                        plane.name = img.userData.imageName;
                         plane.overdraw = true;
                         //-1 because index is 0 - n-1 but num of paintings is n
                         if (index <= Math.floor(gal.num_of_paintings / 2) - 1 || index < 15) {

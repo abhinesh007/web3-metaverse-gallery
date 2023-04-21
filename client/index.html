@@ -93,8 +93,8 @@
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  <tr v-for="bid in gal.currentArtBids">
-                                    <th scope="row">1</th>
+                                  <tr v-for="(bid, index)  in gal.currentArtBids">
+                                    <th scope="row">{{ index+1 }}</th>
                                     <td>{{ bid.selectedImage }}</td>
                                     <td>{{ bid.userName }}</td>
                                     <td>${{ bid.userBidValue }}</td>
@@ -129,6 +129,7 @@
                             :class="{ 'cursor-not-allowed': gal.currentArtBids.length }"
                             class="btn btn-danger"
                             title="Remove Art from Gallery"
+                            @click="gal.removeArt()"
                         >
                             Delete Art
                         </button>
